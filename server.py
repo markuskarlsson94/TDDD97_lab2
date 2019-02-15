@@ -62,8 +62,9 @@ def sign_in():
 
     print()
     print(database_helper.get_token())
-    
+
     return create_response(True, 'Successfully signed in', token)
+    #http://flask.pocoo.org/docs/0.12/patterns/sqlite3/
 
 if __name__ == '__main__':
     app.run(debug = True)
