@@ -10,12 +10,30 @@ def get_db():
         db = g.db = connect_db()
     return db
 
-def add_user(name, email, passw):
+def register_user(name, email, passw):
     try:
         c = get_db()
         result = c.execute("insert into registred_users (name, email, password) values (?,?,?)", [name,email,passw])
         c.commit()
         return True
+    except:
+        return False
+
+def login_user(email, token):
+    try:
+        c = get_db()
+        result = c.execute("insert into logged_in_users (email, token) values (?,?)", [email,token])
+        c.commit()
+        return True
+    except:
+        return False
+
+def get_token():
+    try:
+        c = get_db()
+        result = c.execute("select token from logged_in_users")
+        c.commit()
+        return result
     except:
         return False
 

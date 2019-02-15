@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from flask import Flask, request, jsonify
 import database_helper
 from random import randint
@@ -12,35 +14,43 @@ def hello_world():
 def after_request(exception):
     database_helper.close_db()
 
+def create_response(status, message, data = 'N/A'):
+    if data == 'N/A':
+        return jsonify({'status' : status, 'message' : message})
+    else:
+        return jsonify({'status' : status, 'message' : message, 'data' : data})
+
 @app.route('/register', methods = ['PUT'])
 def sign_up():
-    print("REGISTRING USER...")
     data = request.get_json()
     name = data['name']
     email = data['email']
     passw = data['password']
 
     if (len(name) == 0):
-        #Too short name, abort!
-        response = jsonify({'status' : False, 'message' : 'Too short username'})
+        response = create_response(False, 'Too short username')
     elif (len(email) == 0):
-        #Too short email, abort!
-        response = jsonify({'status' : False, 'message' : 'Too short email'})
+        response = create_response(False, 'Too short email')
     elif (len(passw) < 8):
-        #Too short password, abort!
-        response = jsonify({'status' : False, 'message' : 'Too short password'})
+        response = create_response(False, 'Too short password')
     else:
         #Approved data, continue registration
-        result = database_helper.add_user(name, email, passw)
+        result = database_helper.register_user(name, email, passw)
         if (result):
-            response = jsonify({'status' : True, 'message' : 'User registred!'})
+            response = create_response(True, 'User registred')
         else:
-            response = jsonify({'status' : False, 'message' : 'User already registred!'})
-    print("...DONE")
+            response = create_response(False, 'User already registred')
     return response
 
 @app.route('/login', methods = ['PUT'])
 def sign_in():
+    data = request.get_json()
+    email = data['email']
+    passw = data['password']
+
+    print(email)
+    print(passw)
+
     letters = 'abcdefghiklmnopqrstuvwwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
     token = ''
 
@@ -48,10 +58,12 @@ def sign_in():
         index = randint(0,len(letters)-1)
         token += letters[index]
 
-    print('')
-    print(token)
+    #database_helper.login_user(email, token)
 
-    return '<p>hejsan</p>'
+    print()
+    print(database_helper.get_token())
+    
+    return create_response(True, 'Successfully signed in', token)
 
 if __name__ == '__main__':
     app.run(debug = True)
