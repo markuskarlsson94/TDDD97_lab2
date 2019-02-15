@@ -5,8 +5,12 @@ from random import randint
 app = Flask(__name__)
 @app.route('/')
 def hello_world():
-    #database_helper.add_message('hejsan2', "halla dar")
     return 'Hello hjesna!'
+
+
+@app.teardown_request
+def after_request(exception):
+    database_helper.close_db()
 
 @app.route('/register', methods = ['PUT'])
 def sign_up():
