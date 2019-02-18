@@ -48,9 +48,7 @@ def sign_in():
     email = data['email']
     passw = data['password']
 
-    print(email)
-    print(passw)
-
+    #generate token
     letters = 'abcdefghiklmnopqrstuvwwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
     token = ''
 
@@ -58,13 +56,27 @@ def sign_in():
         index = randint(0,len(letters)-1)
         token += letters[index]
 
-    #database_helper.login_user(email, token)
+    #try to login user
+    result = database_helper.login_user(email, passw, token)
+    if (result):
+        return create_response(True, 'Successfully signed in', token)
+    else:
+        return create_response(False, 'Wrong username or password', token)
 
-    print()
-    print(database_helper.get_token())
-
-    return create_response(True, 'Successfully signed in', token)
     #http://flask.pocoo.org/docs/0.12/patterns/sqlite3/
+
+@app.route('/remove', methods = ['PUT'])
+def remove_user():
+    data = request.get_json()
+    email = data['email']
+
+    result = database_helper.delete_user(email)
+    if (result):
+        response = create_response(True, 'Successfully removed user')
+    else:
+        response = create_response(False, 'Failed to remove user')
+
+    return response
 
 if __name__ == '__main__':
     app.run(debug = True)

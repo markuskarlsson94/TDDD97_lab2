@@ -1,7 +1,7 @@
-DROP TABLE IF EXISTS registred_users;
+DROP TABLE IF EXISTS registered_users;
 DROP TABLE IF EXISTS logged_in_users;
 
-CREATE TABLE registred_users(name varchar(30) NOT NULL,
+CREATE TABLE registered_users(name varchar(30) NOT NULL,
                              email varchar(30) NOT NULL,
                              password varchar(30) NOT NULL,
                              PRIMARY KEY(email));
