@@ -31,10 +31,22 @@ def login_user(email, password, token):
     else:
         return False
 
+def logout_user(token):
+    c = get_db()
+    stored_token = get_token()
+    if (token == stored_token):
+        c.execute("delete from logged_in_users where (token) = (?)", [token])
+        c.commit()
+        return True
+    else:
+        return False
+
 def get_token():
     try:
         c = get_db()
         result = c.execute("select token from logged_in_users")
+        result = result.fetchone()[0]
+        print(result)
         c.commit()
         return result
     except:
@@ -43,13 +55,54 @@ def get_token():
 def delete_user(email):
     try:
         c = get_db()
-        #result = c.execute("select * from registered_users where (email) = (?)", [email])
         result = c.execute("delete from registered_users where (email) = (?)", [email])
-        #print(result.fetchall())
         c.commit()
         return True
     except:
         return False
+
+#def user_change_password(token, cur, new):
+
+def user_logged_in(token):
+    try:
+        c = get_db()
+        result = c.execute("select * from logged_in_users where (token) = (?)", [token])
+        result = result.fetchone()[0]
+        c.commit()
+        if (result == None):
+            return False
+        return True
+    except:
+        return False
+
+def user_exists(email):
+    try:
+        c = get_db()
+        result = c.execute("select * from registered_users where (email) = (?)", [email])
+        result = result.fetchone()[0]
+        c.commit()
+        if (result == None):
+            return False
+        return True
+    except:
+        return False
+
+def get_user_data(email):
+    try:
+        c = get_db()
+        result = c.execute("select * from registered_users where (email) = (?)", [email])
+        result = result.fetchone()
+        print(result)
+        c.commit()
+        if (result is not None):
+            result = ({"status" : True, "message" : "Here's your data!",
+                            {"name" : result[0], "email" : result[1], "password" : result[2]}})
+            return result
+        result = []
+        return result
+    except:
+        result = []
+        return result
 
 def alter_table(command_string, parameter_array):
     try:
