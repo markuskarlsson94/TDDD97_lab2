@@ -94,39 +94,73 @@ def user_logged_in():
     token = data['token']
     if database_helper.user_logged_in(token):
         return create_response(True, 'User is logged in')
-    else:
-        return create_response(False, 'User is not logged in')
+    #else:
+    return create_response(False, 'User is not logged in')
 
 @app.route('/userdatabyemail', methods = ['PUT'])
-def get_user_data_by_token():
+def get_user_data_by_email():
     data = request.get_json()
     token = data['token']
     email = data['email']
 
+    #print("tokenToEmail: ", database_helper.token_to_email(token))
+
     if (not database_helper.user_logged_in(token)):
         return create_response(False, 'You are not logged in')
     elif (database_helper.user_exists(email) == False):
-        return create_response(False, 'User does not exist')
-    else:
-        result = database_helper.get_user_data(email)
-        return jsonify(result)
+        return create_response(False, 'No such user')
+    #else:
+    result = database_helper.get_user_data(email)
+    return create_response(True, "User data retrieved", result)
 
+@app.route('/userdatabytoken', methods = ['PUT'])
+def get_user_data_by_token():
+    data = request.get_json()
+    token = data['token']
+
+    email = database_helper.token_to_email(token)
+
+    if (not database_helper.user_logged_in(token)):
+        return create_response(False, 'You are not logged in')
+    elif (database_helper.user_exists(email) == False):
+        return create_response(False, 'No such user')
+    #else:
+    result = database_helper.get_user_data(email)
+    return create_response(True, "User data retrieved", result)
 
 
 @app.route('/changepassword', methods = ['PUT'])
 def user_change_password():
     data = request.get_json()
     token = data['token']
-    current_pass = data['cur']
+    old_pass = data['old']
     new_pass = data['new']
 
-    stored_token=database_helper.get_token()
-
-    if (stored_token != token):
-        respone = create_response(False, 'Wrong token')
+    if (not database_helper.user_logged_in(token)):
+        return create_response(False, 'You are not logged in')
     elif (len(new_pass) < 8):
-        response = create_response(False, 'Too short password')
+        return create_response(False, 'Too short password')
+    elif (len(new_pass) > 30):
+        return  create_response(False, 'Too long password')
 
+    stored_pass = (database_helper.get_user_password(database_helper.token_to_email(token)))
+    if (stored_pass != old_pass):
+        return create_response(False, 'Wrong password')
+    else:
+        email = database_helper.token_to_email(token)
+        result = database_helper.set_user_password(new_pass, email)
+        if (result):
+            return create_response(True, 'Password changed')
+    return create_response(False, 'Could not change password')
+
+@app.route('/messagesbyemail', methods = ['PUT'])
+def user_get_messages():
+    data = request.get_json()
+    token = data['token']
+    email = data['email']
+
+    print(database_helper.get_messages_email(token, email))
+    return "ssees"
 
 
 if __name__ == '__main__':
