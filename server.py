@@ -20,7 +20,7 @@ def create_response(status, message, data = 'N/A'):
     else:
         return jsonify({'status' : status, 'message' : message, 'data' : data})
 
-@app.route('/register', methods = ['PUT'])
+@app.route('/register', methods = ['POST'])
 def sign_up():
     data = request.get_json()
     name = data['name']
@@ -42,7 +42,7 @@ def sign_up():
             response = create_response(False, 'User already registred')
     return response
 
-@app.route('/login', methods = ['PUT'])
+@app.route('/login', methods = ['POST'])
 def sign_in():
     data = request.get_json()
     email = data['email']
@@ -65,7 +65,7 @@ def sign_in():
 
     #http://flask.pocoo.org/docs/0.12/patterns/sqlite3/
 
-@app.route('/remove', methods = ['PUT'])
+@app.route('/remove', methods = ['POST'])
 def remove_user():
     data = request.get_json()
     email = data['email']
@@ -78,7 +78,7 @@ def remove_user():
 
     return response
 
-@app.route('/logout', methods = ['PUT'])
+@app.route('/logout', methods = ['POST'])
 def logout_user():
     data = request.get_json()
     token = data['token']
@@ -88,7 +88,7 @@ def logout_user():
         return create_response(True, "User logged out")
     return create_response(False, "Could not log out user")
 
-@app.route('/userloggedin', methods = ['PUT'])
+@app.route('/userloggedin', methods = ['POST'])
 def user_logged_in():
     data = request.get_json()
     token = data['token']
@@ -97,23 +97,21 @@ def user_logged_in():
     #else:
     return create_response(False, 'User is not logged in')
 
-@app.route('/userdatabyemail', methods = ['PUT'])
+@app.route('/userdatabyemail', methods = ['POST'])
 def get_user_data_by_email():
     data = request.get_json()
     token = data['token']
     email = data['email']
 
-    #print("tokenToEmail: ", database_helper.token_to_email(token))
-
     if (not database_helper.user_logged_in(token)):
         return create_response(False, 'You are not logged in')
     elif (database_helper.user_exists(email) == False):
         return create_response(False, 'No such user')
-    #else:
+
     result = database_helper.get_user_data(email)
     return create_response(True, "User data retrieved", result)
 
-@app.route('/userdatabytoken', methods = ['PUT'])
+@app.route('/userdatabytoken', methods = ['POST'])
 def get_user_data_by_token():
     data = request.get_json()
     token = data['token']
@@ -124,12 +122,12 @@ def get_user_data_by_token():
         return create_response(False, 'You are not logged in')
     elif (database_helper.user_exists(email) == False):
         return create_response(False, 'No such user')
-    #else:
+
     result = database_helper.get_user_data(email)
     return create_response(True, "User data retrieved", result)
 
 
-@app.route('/changepassword', methods = ['PUT'])
+@app.route('/changepassword', methods = ['POST'])
 def user_change_password():
     data = request.get_json()
     token = data['token']
@@ -153,15 +151,56 @@ def user_change_password():
             return create_response(True, 'Password changed')
     return create_response(False, 'Could not change password')
 
-@app.route('/messagesbyemail', methods = ['PUT'])
-def user_get_messages():
+@app.route('/messagesbyemail', methods = ['POST'])
+def user_get_messages_email():
     data = request.get_json()
     token = data['token']
     email = data['email']
 
-    print(database_helper.get_messages_email(token, email))
-    return "ssees"
+    if (not database_helper.user_logged_in(token)):
+        return create_response(False, 'You are not logged in')
+    elif (not database_helper.user_exists(email)):
+        return create_response(False, "No such user")
+    else:
+        data = database_helper.get_messages_by_email(token, email)
+        if (data is not False):
+            return create_response(True, "User messages retrieved", data)
+    return create_response(False, "Something went wrong")
 
+@app.route('/messagesbytoken', methods = ['POST'])
+def user_get_messages_token():
+    data = request.get_json()
+    token = data['token']
+    email = database_helper.token_to_email(token)
+    print(email)
+
+    if (not database_helper.user_logged_in(token)):
+        return create_response(False, 'You are not logged in')
+    elif (not database_helper.user_exists(email)):
+        return create_response(False, "No such user")
+    else:
+        data = database_helper.get_messages_by_email(token, email)
+        if (data is not False):
+            return create_response(True, "User messages retrieved", data)
+    return create_response(False, "Something went wrong")
+
+@app.route('/postmessage', methods = ['POST'])
+def user_post_message():
+    data = request.get_json()
+    token = data['token']
+    message = data['message']
+    email = data['email']
+    sender = database_helper.token_to_email(token)
+
+    if (not database_helper.user_logged_in(token)):
+        return create_response(False, 'You are not logged in')
+    elif (not database_helper.user_exists(email)):
+        return create_response(False, "No such user")
+    else:
+        result = database_helper.post_message(email, sender, message)
+        if (result):
+            return create_response(True, "Message posted")
+    return create_response(False, "Something went wrong")
 
 if __name__ == '__main__':
     app.run(debug = True)

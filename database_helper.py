@@ -1,5 +1,5 @@
 import sqlite3
-from flask import g
+from flask import g, jsonify
 
 def connect_db():
     return sqlite3.connect("database.db")
@@ -139,16 +139,20 @@ def set_user_password(password, email):
     except:
         return False
 
-def get_messages_email(token, email):
+def get_messages_by_email(token, email):
     try:
         c = get_db()
-        rows = c.execute("select message from messages where (email) = (?)", [email])
+        rows = c.execute("select message, sender from messages where (email) = (?)", [email])
         rows = rows.fetchall()
-        #result = []
-        #for row in range(len(rows)):
-        #    print(rows[row][1])
-        #return True
-        return rows
+
+        result = []
+        for row in range(len(rows)):
+            message = "".join(rows[row][0])
+            sender = "".join(rows[row][1])
+            data = {'writer' : sender, 'content' : message}
+            result.append(data)
+
+        return result
     except:
         return False
 
@@ -156,6 +160,15 @@ def alter_table(command_string, parameter_array):
     try:
         c = get_db()
         result = c.execute(command_string, parameter_array)
+        c.commit()
+        return True
+    except:
+        return False
+
+def post_message(email, sender, message):
+    try:
+        c = get_db();
+        result = c.execute("INSERT INTO messages VALUES(?, ?, ?)", [email, sender, message])
         c.commit()
         return True
     except:
