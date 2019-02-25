@@ -24,7 +24,6 @@ def login_user(email, password, token):
     result = c.execute("select * from registered_users where (email) = (?) AND (password) = (?)", [email, password])
     result = result.fetchone()
     if (result is not None):
-        #print("hejsan")
         c.execute("insert into logged_in_users (email, token) values (?,?)", [email,token])
         c.commit()
         return True
@@ -46,7 +45,6 @@ def get_token():
         c = get_db()
         result = c.execute("select token from logged_in_users")
         result = result.fetchone()[0]
-        #print(result)
         c.commit()
         return result
     except:
@@ -61,14 +59,13 @@ def delete_user(email):
     except:
         return False
 
-#def user_change_password(token, cur, new):
-
 def user_logged_in(token):
     try:
         c = get_db()
         result = c.execute("select * from logged_in_users where (token) = (?)", [token])
         result = result.fetchone()[0]
         c.commit()
+
         if (result == None):
             return False
         return True
@@ -80,8 +77,8 @@ def token_to_email(token):
         c = get_db()
         result = c.execute("select * from logged_in_users where (token) = (?)", [token])
         result = result.fetchone()[0]
-        #print(result)
         c.commit()
+
         if (result == None):
             return False
         return result

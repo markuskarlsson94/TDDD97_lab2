@@ -60,8 +60,7 @@ def sign_in():
     result = database_helper.login_user(email, passw, token)
     if (result):
         return create_response(True, 'Successfully signed in', token)
-    else:
-        return create_response(False, 'Wrong username or password', token)
+    return create_response(False, 'Wrong username or password', token)
 
     #http://flask.pocoo.org/docs/0.12/patterns/sqlite3/
 
@@ -70,13 +69,13 @@ def remove_user():
     data = request.get_json()
     email = data['email']
 
-    result = database_helper.delete_user(email)
-    if (result):
-        response = create_response(True, 'Successfully removed user')
+    if (database_helper.user_exists(email)):
+        result = database_helper.delete_user(email)
+        if (result):
+            return create_response(True, 'Successfully removed user')
     else:
-        response = create_response(False, 'Failed to remove user')
-
-    return response
+        return create_response(False, 'No such user')
+    return create_response(False, 'Failed to remove user')
 
 @app.route('/logout', methods = ['POST'])
 def logout_user():
@@ -125,7 +124,6 @@ def get_user_data_by_token():
 
     result = database_helper.get_user_data(email)
     return create_response(True, "User data retrieved", result)
-
 
 @app.route('/changepassword', methods = ['POST'])
 def user_change_password():
