@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import database_helper
 from random import randint
 
@@ -23,19 +23,31 @@ def create_response(status, message, data = 'N/A'):
 @app.route('/register', methods = ['POST'])
 def sign_up():
     data = request.get_json()
-    name = data['name']
+    firstname = data['firstname']
+    familyname = data['familyname']
     email = data['email']
     passw = data['password']
+    gender = data['gender']
+    city = data['city']
+    country = data['country']
 
-    if (len(name) == 0):
-        response = create_response(False, 'Too short username')
+    if (len(firstname) == 0):
+        response = create_response(False, 'Too short firstname')
+    elif (len(familyname) == 0):
+        response = create_response(False, 'Too short familyname')
     elif (len(email) == 0):
         response = create_response(False, 'Too short email')
     elif (len(passw) < 8):
         response = create_response(False, 'Too short password')
+    elif (len(gender) == 0):
+        response = create_response(False, 'Too short gender')
+    elif (len(city) == 0):
+        response = create_response(False, 'Too short city')
+    elif (len(country) == 0):
+        response = create_response(False, 'Too short country')
     else:
         #Approved data, continue registration
-        result = database_helper.register_user(name, email, passw)
+        result = database_helper.register_user(firstname, familyname, email, passw, gender, city, country)
         if (result):
             response = create_response(True, 'User registred')
         else:
@@ -62,8 +74,6 @@ def sign_in():
         return create_response(True, 'Successfully signed in', token)
     return create_response(False, 'Wrong username or password', token)
 
-    #http://flask.pocoo.org/docs/0.12/patterns/sqlite3/
-
 @app.route('/remove', methods = ['POST'])
 def remove_user():
     data = request.get_json()
@@ -80,9 +90,11 @@ def remove_user():
 @app.route('/logout', methods = ['POST'])
 def logout_user():
     data = request.get_json()
-    token = data['token']
 
-    ret = database_helper.logout_user(token)
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    ret = database_helper.logout_user(a_token)
     if (ret):
         return create_response(True, "User logged out")
     return create_response(False, "Could not log out user")
@@ -90,19 +102,23 @@ def logout_user():
 @app.route('/userloggedin', methods = ['POST'])
 def user_logged_in():
     data = request.get_json()
-    token = data['token']
-    if database_helper.user_logged_in(token):
+
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    if database_helper.user_logged_in(a_token):
         return create_response(True, 'User is logged in')
-    #else:
     return create_response(False, 'User is not logged in')
 
 @app.route('/userdatabyemail', methods = ['POST'])
 def get_user_data_by_email():
     data = request.get_json()
-    token = data['token']
     email = data['email']
 
-    if (not database_helper.user_logged_in(token)):
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    if (not database_helper.user_logged_in(a_token)):
         return create_response(False, 'You are not logged in')
     elif (database_helper.user_exists(email) == False):
         return create_response(False, 'No such user')
@@ -113,11 +129,13 @@ def get_user_data_by_email():
 @app.route('/userdatabytoken', methods = ['POST'])
 def get_user_data_by_token():
     data = request.get_json()
-    token = data['token']
 
-    email = database_helper.token_to_email(token)
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
 
-    if (not database_helper.user_logged_in(token)):
+    email = database_helper.token_to_email(a_token)
+
+    if (not database_helper.user_logged_in(a_token)):
         return create_response(False, 'You are not logged in')
     elif (database_helper.user_exists(email) == False):
         return create_response(False, 'No such user')
@@ -128,22 +146,24 @@ def get_user_data_by_token():
 @app.route('/changepassword', methods = ['POST'])
 def user_change_password():
     data = request.get_json()
-    token = data['token']
     old_pass = data['old']
     new_pass = data['new']
 
-    if (not database_helper.user_logged_in(token)):
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    if (not database_helper.user_logged_in(a_token)):
         return create_response(False, 'You are not logged in')
     elif (len(new_pass) < 8):
         return create_response(False, 'Too short password')
     elif (len(new_pass) > 30):
         return  create_response(False, 'Too long password')
 
-    stored_pass = (database_helper.get_user_password(database_helper.token_to_email(token)))
+    stored_pass = (database_helper.get_user_password(database_helper.token_to_email(a_token)))
     if (stored_pass != old_pass):
         return create_response(False, 'Wrong password')
     else:
-        email = database_helper.token_to_email(token)
+        email = database_helper.token_to_email(a_token)
         result = database_helper.set_user_password(new_pass, email)
         if (result):
             return create_response(True, 'Password changed')
@@ -152,15 +172,17 @@ def user_change_password():
 @app.route('/messagesbyemail', methods = ['POST'])
 def user_get_messages_email():
     data = request.get_json()
-    token = data['token']
     email = data['email']
 
-    if (not database_helper.user_logged_in(token)):
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    if (not database_helper.user_logged_in(a_token)):
         return create_response(False, 'You are not logged in')
     elif (not database_helper.user_exists(email)):
         return create_response(False, "No such user")
     else:
-        data = database_helper.get_messages_by_email(token, email)
+        data = database_helper.get_messages_by_email(a_token, email)
         if (data is not False):
             return create_response(True, "User messages retrieved", data)
     return create_response(False, "Something went wrong")
@@ -168,16 +190,19 @@ def user_get_messages_email():
 @app.route('/messagesbytoken', methods = ['POST'])
 def user_get_messages_token():
     data = request.get_json()
-    token = data['token']
-    email = database_helper.token_to_email(token)
+
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    email = database_helper.token_to_email(a_token)
     print(email)
 
-    if (not database_helper.user_logged_in(token)):
+    if (not database_helper.user_logged_in(a_token)):
         return create_response(False, 'You are not logged in')
     elif (not database_helper.user_exists(email)):
         return create_response(False, "No such user")
     else:
-        data = database_helper.get_messages_by_email(token, email)
+        data = database_helper.get_messages_by_email(a_token, email)
         if (data is not False):
             return create_response(True, "User messages retrieved", data)
     return create_response(False, "Something went wrong")
@@ -185,12 +210,15 @@ def user_get_messages_token():
 @app.route('/postmessage', methods = ['POST'])
 def user_post_message():
     data = request.get_json()
-    token = data['token']
     message = data['message']
     email = data['email']
-    sender = database_helper.token_to_email(token)
 
-    if (not database_helper.user_logged_in(token)):
+    if 'Authorization' in request.headers:
+        a_token = request.headers.get('Authorization')
+
+    sender = database_helper.token_to_email(a_token)
+
+    if (not database_helper.user_logged_in(a_token)):
         return create_response(False, 'You are not logged in')
     elif (not database_helper.user_exists(email)):
         return create_response(False, "No such user")
@@ -201,4 +229,4 @@ def user_post_message():
     return create_response(False, "Something went wrong")
 
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(debug = True,port = 5000)

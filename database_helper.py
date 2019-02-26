@@ -10,10 +10,10 @@ def get_db():
         db = g.db = connect_db()
     return db
 
-def register_user(name, email, passw):
+def register_user(firstname, familyname, email, passw, gender, city, country):
     try:
         c = get_db()
-        result = c.execute("insert into registered_users (name, email, password) values (?,?,?)", [name,email,passw])
+        result = c.execute("insert into registered_users (firstname, familyname, email, password, gender, city, country) values (?,?,?,?,?,?,?)", [firstname,familyname,email,passw,gender,city,country])
         c.commit()
         return True
     except:
@@ -23,7 +23,10 @@ def login_user(email, password, token):
     c = get_db()
     result = c.execute("select * from registered_users where (email) = (?) AND (password) = (?)", [email, password])
     result = result.fetchone()
-    if (result is not None):
+
+    result2 = c.execute("select * from logged_in_users where (email) = (?)", [email])
+    result2 = result2.fetchone()
+    if (result is not None and result2 is None):
         c.execute("insert into logged_in_users (email, token) values (?,?)", [email,token])
         c.commit()
         return True
@@ -104,7 +107,7 @@ def get_user_data(email):
         result = result.fetchone()
         c.commit()
         if (result is not None):
-            result = {"name" : result[0], "email" : result[1]}
+            result = {"firstname" : result[0], "familyname" : result[1], "email" : result[2], "gender" : result[4], "city" : result[5], "country" : result[6]}
             return result
         result = {}
         return result
@@ -115,11 +118,11 @@ def get_user_data(email):
 def get_user_password(email):
     try:
         c = get_db()
-        result = c.execute("select * from registered_users where (email) = (?)", [email])
+        result = c.execute("select password from registered_users where (email) = (?)", [email])
         result = result.fetchone()
         c.commit()
         if (result is not None):
-            result = result[2]
+            result = result[0]
             return result
         result = {}
         return result
